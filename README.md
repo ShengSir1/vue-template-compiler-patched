@@ -2,7 +2,11 @@
 
 A security-patched version of vue-template-compiler to fix the prototype pollution vulnerability (CVE-2024-6783) and the ReDoS vulnerability (CVE-2024-9506).
 
-> This package is auto-generated. For pull requests please see [src/platforms/web/entry-compiler.js](https://github.com/vuejs/vue/tree/dev/src/platforms/web/entry-compiler.js).
+> Based on [vue-template-compiler@2.7.16](https://github.com/vuejs/vue/tree/v2.7.16/packages/template-compiler). Development and issues live in [vue-patched](https://github.com/bio/vue-patched).
+
+## Related
+
+If you use the Vue full build (runtime + compiler) or CDN `vue.js`, also replace `vue` with [vue-patched](https://github.com/bio/vue-patched).
 
 This package can be used to pre-compile Vue 2.0 templates into render functions to avoid runtime-compilation overhead and CSP restrictions. In most cases you should be using it with [`vue-loader`](https://github.com/vuejs/vue-loader), you will only need it separately if you are writing build tools with very specific needs.
 

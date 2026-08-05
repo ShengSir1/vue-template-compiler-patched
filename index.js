@@ -9,7 +9,7 @@ function getBaseVersion(v) {
   return String(v).split(/-patch/)[0]
 }
 
-if (vueVersion && vueVersion !== getBaseVersion(packageVersion)) {
+if (vueVersion && getBaseVersion(vueVersion) !== getBaseVersion(packageVersion)) {
   var vuePath = require.resolve('vue')
   var packagePath = require.resolve('./package.json')
   throw new Error(

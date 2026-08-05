@@ -16,29 +16,29 @@ Choose the installation approach that works best for you.
 
 ### Alias installation method
 
-Installs the patched compiler under the original `vue-template-compiler` name, satisfying any peer dependencies or `require('vue-template-compiler')` lookups (e.g. by `@vue/test-utils`).
+Installs the patched compiler under the original `vue-template-compiler` name, so peer dependencies remain satisfied and existing package lookups continue to resolve (e.g. in `@vue/test-utils`).
 
 #### npm
 
 ```sh
-npm install vue-template-compiler@npm:vue-template-compiler-patched@^2.7.16-patch.2 --save-dev
+npm install vue-template-compiler@npm:vue-template-compiler-patched@^2.7.16-patch.3 --save-dev
 ```
 
 #### pnpm
 
 ```sh
-pnpm add vue-template-compiler@npm:vue-template-compiler-patched@^2.7.16-patch.2 --save-dev
+pnpm add vue-template-compiler@npm:vue-template-compiler-patched@^2.7.16-patch.3 --save-dev
 ```
 
 #### Yarn
 
 ```sh
-yarn add vue-template-compiler@npm:vue-template-compiler-patched@^2.7.16-patch.2 --dev
+yarn add vue-template-compiler@npm:vue-template-compiler-patched@^2.7.16-patch.3 --dev
 ```
 
 ### Standard installation method
 
-Installs the patched compiler under its scoped name. Use this if you only need direct access to the patched build.
+Installs the compiler as `vue-template-compiler-patched`. Use this method if you only need direct access to the patched build. Tools that resolve `vue-template-compiler` by package name will not detect it.
 
 #### npm
 
@@ -59,8 +59,10 @@ yarn add vue-template-compiler-patched --dev
 ```
 
 #### Usage
+
 ```js
-const compiler = require('vue-template-compiler-patched')
+import compiler from 'vue-template-compiler-patched'
+// or: const compiler = require('vue-template-compiler-patched')
 ```
 
 ## API

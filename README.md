@@ -6,6 +6,10 @@ A security-hardened version of vue-template-compiler addressing prototype-pollut
 
 > Based on [vue-template-compiler@2.7.16](https://github.com/vuejs/vue/tree/v2.7.16/packages/template-compiler). Development and issues live in [vue-patched](https://github.com/bio/vue-patched).
 
+## Acknowledgments
+
+Forked from [bio/vue-template-compiler-patched](https://github.com/bio/vue-template-compiler-patched). Thanks to the original author for their work on this project.
+
 ## Related
 
 If you use the Vue full build (runtime + compiler) or CDN `vue.js`, also replace `vue` with [vue-patched](https://github.com/bio/vue-patched).

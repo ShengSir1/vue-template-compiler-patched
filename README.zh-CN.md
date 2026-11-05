@@ -6,6 +6,10 @@
 
 > 基于 [vue-template-compiler@2.7.16](https://github.com/vuejs/vue/tree/v2.7.16/packages/template-compiler)。开发和问题反馈请访问 [vue-patched](https://github.com/bio/vue-patched)。
 
+## 致谢
+
+本项目 fork 自 [bio/vue-template-compiler-patched](https://github.com/bio/vue-template-compiler-patched)。感谢原作者为本项目所做的工作。
+
 ## 相关项目
 
 如果你使用 Vue 完整版（运行时 + 编译器）或 CDN 提供的 `vue.js`，也请将 `vue` 替换为 [vue-patched](https://github.com/bio/vue-patched)。

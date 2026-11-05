@@ -1,6 +1,8 @@
-# vue-template-compiler-patched
+# @ruihua/vue-template-compiler-patched
 
-A security-patched version of vue-template-compiler to fix the prototype pollution vulnerability (CVE-2024-6783) and the ReDoS vulnerability (CVE-2024-9506).
+[简体中文](README.zh-CN.md) | English
+
+A security-hardened version of vue-template-compiler addressing prototype-pollution-assisted code generation (CVE-2024-6783) and raw-text parser ReDoS (CVE-2024-9506).
 
 > Based on [vue-template-compiler@2.7.16](https://github.com/vuejs/vue/tree/v2.7.16/packages/template-compiler). Development and issues live in [vue-patched](https://github.com/bio/vue-patched).
 
@@ -9,6 +11,27 @@ A security-patched version of vue-template-compiler to fix the prototype polluti
 If you use the Vue full build (runtime + compiler) or CDN `vue.js`, also replace `vue` with [vue-patched](https://github.com/bio/vue-patched).
 
 This package can be used to pre-compile Vue 2.0 templates into render functions to avoid runtime-compilation overhead and CSP restrictions. In most cases you should be using it with [`vue-loader`](https://github.com/vuejs/vue-loader), you will only need it separately if you are writing build tools with very specific needs.
+
+## Security Hardening and Scope
+
+- Compiler-owned AST elements, text/comment nodes, SSR grouping nodes, and attribute/event/slot dictionaries use null prototypes. Client and SSR code generation therefore do not inherit ambient `Object.prototype` metadata.
+- Compiler option and directive merging copies own enumerable properties only. Explicit custom modules and directives remain trusted compiler extensions.
+- Raw-text parsing for `script`, `style`, and `textarea` uses a forward scan instead of a backtracking content regex. The scanner preserves existing closing-tag matching, recovery behavior, and source ranges.
+- This does not prevent another dependency from polluting prototypes, make untrusted Vue templates safe, or patch the compiler embedded in a separate Vue full build. Ensure your toolchain actually resolves the patched package.
+
+**Compatibility:** AST nodes and compiler dictionaries no longer inherit Object methods. Custom compiler tooling should use `Object.keys(value)` and `Object.prototype.hasOwnProperty.call(value, key)`, not `value.hasOwnProperty(key)`. Inherited compiler options/directives are intentionally ignored; supply them as own properties.
+
+**Fork package:** `@ruihua/vue-template-compiler-patched` retains the Vue 2.7.16 baseline and the existing `2.7.16-patch.3` version for its initial scoped release. The upstream MIT license and attribution are preserved.
+
+### Regression Tests
+
+From this source checkout, run:
+
+```sh
+npm test
+```
+
+Tests run offline in Node without opening a browser or installing dependencies. They cover both distributed bundles, client/SSR code generation, safe inherited-field markers, normal-template compatibility, SFC extraction, and bounded raw-text parser checks. Node builds use the real dependency implementations embedded in `browser.js` inside isolated VM contexts; this is not a downstream build-tool integration test.
 
 ## Installation
 
@@ -21,48 +44,48 @@ Installs the patched compiler under the original `vue-template-compiler` name, s
 #### npm
 
 ```sh
-npm install vue-template-compiler@npm:vue-template-compiler-patched@^2.7.16-patch.3 --save-dev
+npm install vue-template-compiler@npm:@ruihua/vue-template-compiler-patched@^2.7.16-patch.3 --save-dev
 ```
 
 #### pnpm
 
 ```sh
-pnpm add vue-template-compiler@npm:vue-template-compiler-patched@^2.7.16-patch.3 --save-dev
+pnpm add vue-template-compiler@npm:@ruihua/vue-template-compiler-patched@^2.7.16-patch.3 --save-dev
 ```
 
 #### Yarn
 
 ```sh
-yarn add vue-template-compiler@npm:vue-template-compiler-patched@^2.7.16-patch.3 --dev
+yarn add vue-template-compiler@npm:@ruihua/vue-template-compiler-patched@^2.7.16-patch.3 --dev
 ```
 
 ### Standard installation method
 
-Installs the compiler as `vue-template-compiler-patched`. Use this method if you only need direct access to the patched build. Tools that resolve `vue-template-compiler` by package name will not detect it.
+Installs the compiler as `@ruihua/vue-template-compiler-patched`. Use this method if you only need direct access to the patched build. Tools that resolve `vue-template-compiler` by package name will not detect it.
 
 #### npm
 
 ```sh
-npm install vue-template-compiler-patched --save-dev
+npm install @ruihua/vue-template-compiler-patched --save-dev
 ```
 
 #### pnpm
 
 ```sh
-pnpm add vue-template-compiler-patched --save-dev
+pnpm add @ruihua/vue-template-compiler-patched --save-dev
 ```
 
 #### Yarn
 
 ```sh
-yarn add vue-template-compiler-patched --dev
+yarn add @ruihua/vue-template-compiler-patched --dev
 ```
 
 #### Usage
 
 ```js
-import compiler from 'vue-template-compiler-patched'
-// or: const compiler = require('vue-template-compiler-patched')
+import compiler from '@ruihua/vue-template-compiler-patched'
+// or: const compiler = require('@ruihua/vue-template-compiler-patched')
 ```
 
 ## API

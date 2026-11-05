@@ -125,6 +125,21 @@ const hasOwnProperty = Object.prototype.hasOwnProperty;
 function hasOwn(obj, key) {
     return hasOwnProperty.call(obj, key);
 }
+var compilerEmptyObject = Object.freeze(Object.create(null));
+// Compiler-owned records never inherit ambient Object.prototype fields.
+function copyCompilerProperties(target, source) {
+    if (source) {
+        Object.keys(source).forEach(function (key) {
+            Object.defineProperty(target, key, {
+                value: source[key], enumerable: true, writable: true, configurable: true
+            });
+        });
+    }
+    return target;
+}
+function createCompilerObject(source) {
+    return copyCompilerProperties(Object.create(null), source);
+}
 /**
  * Create a cached version of a pure function.
  */
@@ -317,7 +332,6 @@ const comment = /^<!\--/;
 const conditionalComment = /^<!\[/;
 // Special Elements (can contain anything)
 const isPlainTextElement = makeMap('script,style,textarea', true);
-const reCache = {};
 const decodingMap = {
     '&lt;': '<',
     '&gt;': '>',
@@ -336,7 +350,20 @@ function decodeAttr(value, shouldDecodeNewlines) {
     const re = shouldDecodeNewlines ? encodedAttrWithNewLines : encodedAttr;
     return value.replace(re, match => decodingMap[match]);
 }
+// Scan raw-text closing tags once; never backtrack over their contents.
+function findRawTextEnd(html, tag) {
+    for (var i = 0; i + tag.length + 2 < html.length; i++) {
+        if (html.charCodeAt(i) !== 60 || html.charCodeAt(i + 1) !== 47) continue;
+        var j = 0;
+        while (j < tag.length && (html.charCodeAt(i + j + 2) | 32) === tag.charCodeAt(j)) j++;
+        if (j !== tag.length) continue;
+        var end = html.indexOf('>', i + tag.length + 2);
+        return end < 0 ? null : { start: i, end: end + 1 };
+    }
+    return null;
+}
 function parseHTML(html, options) {
+    options = createCompilerObject(options);
     const stack = [];
     const expectHTML = options.expectHTML;
     const isUnaryTag = options.isUnaryTag || no;
@@ -419,28 +446,20 @@ function parseHTML(html, options) {
             }
         }
         else {
-            let endTagLength = 0;
-            const stackedTag = lastTag.toLowerCase();
-            const reStackedTag = reCache[stackedTag] ||
-                (reCache[stackedTag] = new RegExp('((?:[^<]+|<(?!/' + stackedTag + '[^>]*>))*)(</' + stackedTag + '[^>]*>)', 'i'));
-            const rest = html.replace(reStackedTag, function (all, text, endTag) {
-                endTagLength = endTag.length;
-                if (!isPlainTextElement(stackedTag) && stackedTag !== 'noscript') {
-                    text = text
-                        .replace(/<!\--([\s\S]*?)-->/g, '$1') // #7298
-                        .replace(/<!\[CDATA\[([\s\S]*?)]]>/g, '$1');
-                }
-                if (shouldIgnoreFirstNewline(stackedTag, text)) {
-                    text = text.slice(1);
-                }
-                if (options.chars) {
-                    options.chars(text);
-                }
-                return '';
-            });
-            index += html.length - rest.length;
-            html = rest;
-            parseEndTag(stackedTag, index - endTagLength, index);
+            var stackedTag = lastTag.toLowerCase();
+            var rawTextEnd = findRawTextEnd(html, stackedTag);
+            if (rawTextEnd) {
+                var text = html.slice(0, rawTextEnd.start);
+                if (shouldIgnoreFirstNewline(stackedTag, text)) text = text.slice(1);
+                if (options.chars) options.chars(text);
+                var endTagStart = index + rawTextEnd.start;
+                advance(rawTextEnd.end);
+                parseEndTag(stackedTag, endTagStart, index);
+            }
+            else {
+                // Preserve the existing malformed-input recovery and warning offsets.
+                parseEndTag(stackedTag, index, index);
+            }
         }
         if (html === last) {
             options.chars && options.chars(html);
@@ -503,10 +522,10 @@ function parseHTML(html, options) {
             const shouldDecodeNewlines = tagName === 'a' && args[1] === 'href'
                 ? options.shouldDecodeNewlinesForHref
                 : options.shouldDecodeNewlines;
-            attrs[i] = {
+            attrs[i] = createCompilerObject({
                 name: args[1],
                 value: decodeAttr(value, shouldDecodeNewlines)
-            };
+            });
             if (process.env.NODE_ENV !== 'production' && options.outputSourceRange) {
                 attrs[i].start = args.start + args[0].match(/^\s*/).length;
                 attrs[i].end = args.end;
@@ -586,6 +605,7 @@ const isSpecialTag = makeMap('script,style,template', true);
  * Parse a single-file component (*.vue) file into an SFC Descriptor Object.
  */
 function parseComponent(source, options = {}) {
+    options = createCompilerObject(options);
     const sfc = {
         source,
         filename: DEFAULT_FILENAME,
@@ -625,7 +645,7 @@ function parseComponent(source, options = {}) {
                 attrs: attrs.reduce((cumulated, { name, value }) => {
                     cumulated[name] = value || true;
                     return cumulated;
-                }, {})
+                }, Object.create(null))
             };
             if (typeof currentBlock.attrs.src === 'string') {
                 currentBlock.src = currentBlock.attrs.src;
@@ -3695,7 +3715,7 @@ function baseWarn(msg, range) {
 }
 /* eslint-enable no-unused-vars */
 function pluckModuleFunction(modules, key) {
-    return modules ? modules.map(m => m[key]).filter(_ => _) : [];
+    return modules ? modules.map(m => hasOwn(m, key) ? m[key] : undefined).filter(_ => _) : [];
 }
 function addProp(el, name, value, range, dynamic) {
     (el.props || (el.props = [])).push(rangeSetItem({ name, value, dynamic }, range));
@@ -3728,7 +3748,7 @@ function prependModifierMarker(symbol, name, dynamic) {
     return dynamic ? `_p(${name},"${symbol}")` : symbol + name; // mark the event as captured
 }
 function addHandler(el, name, value, modifiers, important, warn, range, dynamic) {
-    modifiers = modifiers || emptyObject;
+    modifiers = modifiers || compilerEmptyObject;
     // warn prevent and passive modifier
     /* istanbul ignore if */
     if (process.env.NODE_ENV !== 'production' && warn && modifiers.prevent && modifiers.passive) {
@@ -3772,13 +3792,13 @@ function addHandler(el, name, value, modifiers, important, warn, range, dynamic)
     let events;
     if (modifiers.native) {
         delete modifiers.native;
-        events = el.nativeEvents || (el.nativeEvents = {});
+        events = el.nativeEvents || (el.nativeEvents = Object.create(null));
     }
     else {
-        events = el.events || (el.events = {});
+        events = el.events || (el.events = Object.create(null));
     }
     const newHandler = rangeSetItem({ value: value.trim(), dynamic }, range);
-    if (modifiers !== emptyObject) {
+    if (modifiers !== compilerEmptyObject) {
         newHandler.modifiers = modifiers;
     }
     const handlers = events[name];
@@ -3842,6 +3862,7 @@ function getAndRemoveAttrByRegex(el, name) {
     }
 }
 function rangeSetItem(item, range) {
+    item = createCompilerObject(item);
     if (range) {
         if (range.start != null) {
             item.start = range.start;
@@ -3890,7 +3911,7 @@ var klass = {
 };
 
 const parseStyleText = cached(function (cssText) {
-    const res = {};
+    const res = Object.create(null);
     const listDelimiter = /;(?![^(]*\))/g;
     const propertyDelimiter = /:(.+)/;
     cssText.split(listDelimiter).forEach(function (item) {
@@ -4090,15 +4111,15 @@ let platformMustUseProp;
 let platformGetTagNamespace;
 let maybeComponent;
 function createASTElement(tag, attrs, parent) {
-    return {
+    return createCompilerObject({
         type: 1,
         tag,
         attrsList: attrs,
         attrsMap: makeAttrsMap(attrs),
-        rawAttrsMap: {},
+        rawAttrsMap: Object.create(null),
         parent,
         children: []
-    };
+    });
 }
 /**
  * Convert HTML string to AST.
@@ -4164,7 +4185,7 @@ function parse(template, options) {
                     // keep it in the children list so that v-else(-if) conditions can
                     // find it as the prev node.
                     const name = element.slotTarget || '"default"';
-                    (currentParent.scopedSlots || (currentParent.scopedSlots = {}))[name] = element;
+                    (currentParent.scopedSlots || (currentParent.scopedSlots = Object.create(null)))[name] = element;
                 }
                 currentParent.children.push(element);
                 element.parent = currentParent;
@@ -4203,7 +4224,7 @@ function parse(template, options) {
             warnOnce(`Cannot use <${el.tag}> as component root element because it may ` +
                 'contain multiple nodes.', { start: el.start });
         }
-        if (el.attrsMap.hasOwnProperty('v-for')) {
+        if (hasOwn(el.attrsMap, 'v-for')) {
             warnOnce('Cannot use v-for on stateful component root element because ' +
                 'it renders multiple elements.', el.rawAttrsMap['v-for']);
         }
@@ -4237,7 +4258,7 @@ function parse(template, options) {
                     element.rawAttrsMap = element.attrsList.reduce((cumulated, attr) => {
                         cumulated[attr.name] = attr;
                         return cumulated;
-                    }, {});
+                    }, Object.create(null));
                 }
                 attrs.forEach(attr => {
                     if (invalidAttributeRE.test(attr.name)) {
@@ -4357,20 +4378,20 @@ function parse(template, options) {
                 let res;
                 let child;
                 if (!inVPre && text !== ' ' && (res = parseText(text, delimiters))) {
-                    child = {
+                    child = createCompilerObject({
                         type: 2,
                         expression: res.expression,
                         tokens: res.tokens,
                         text
-                    };
+                    });
                 }
                 else if (text !== ' ' ||
                     !children.length ||
                     children[children.length - 1].text !== ' ') {
-                    child = {
+                    child = createCompilerObject({
                         type: 3,
                         text
-                    };
+                    });
                 }
                 if (child) {
                     if (process.env.NODE_ENV !== 'production' && options.outputSourceRange) {
@@ -4385,11 +4406,11 @@ function parse(template, options) {
             // adding anything as a sibling to the root node is forbidden
             // comments should still be allowed, but ignored
             if (currentParent) {
-                const child = {
+                const child = createCompilerObject({
                     type: 3,
                     text,
                     isComment: true
-                };
+                });
                 if (process.env.NODE_ENV !== 'production' && options.outputSourceRange) {
                     child.start = start;
                     child.end = end;
@@ -4411,10 +4432,10 @@ function processRawAttrs(el) {
     if (len) {
         const attrs = (el.attrs = new Array(len));
         for (let i = 0; i < len; i++) {
-            attrs[i] = {
+            attrs[i] = createCompilerObject({
                 name: list[i].name,
                 value: JSON.stringify(list[i].value)
-            };
+            });
             if (list[i].start != null) {
                 attrs[i].start = list[i].start;
                 attrs[i].end = list[i].end;
@@ -4476,7 +4497,7 @@ function processFor(el) {
     if ((exp = getAndRemoveAttr(el, 'v-for'))) {
         const res = parseFor(exp);
         if (res) {
-            extend(el, res);
+            copyCompilerProperties(el, res);
         }
         else if (process.env.NODE_ENV !== 'production') {
             warn$1(`Invalid v-for expression: ${exp}`, el.rawAttrsMap['v-for']);
@@ -4487,7 +4508,7 @@ function parseFor(exp) {
     const inMatch = exp.match(forAliasRE);
     if (!inMatch)
         return;
-    const res = {};
+    const res = Object.create(null);
     res.for = inMatch[2].trim();
     const alias = inMatch[1].trim().replace(stripParensRE, '');
     const iteratorMatch = alias.match(forIteratorRE);
@@ -4554,7 +4575,7 @@ function addIfCondition(el, condition) {
     if (!el.ifConditions) {
         el.ifConditions = [];
     }
-    el.ifConditions.push(condition);
+    el.ifConditions.push(createCompilerObject(condition));
 }
 function processOnce(el) {
     const once = getAndRemoveAttr(el, 'v-once');
@@ -4635,7 +4656,7 @@ function processSlotContent(el) {
                     }
                 }
                 // add the component's children to its default slot
-                const slots = el.scopedSlots || (el.scopedSlots = {});
+                const slots = el.scopedSlots || (el.scopedSlots = Object.create(null));
                 const { name, dynamic } = getSlotName(slotBinding);
                 const slotContainer = (slots[name] = createASTElement('template', [], el));
                 slotContainer.slotTarget = name;
@@ -4813,7 +4834,7 @@ function checkInFor(el) {
 function parseModifiers(name) {
     const match = name.match(modifierRE);
     if (match) {
-        const ret = {};
+        const ret = Object.create(null);
         match.forEach(m => {
             ret[m.slice(1)] = true;
         });
@@ -4821,7 +4842,7 @@ function parseModifiers(name) {
     }
 }
 function makeAttrsMap(attrs) {
-    const map = {};
+    const map = Object.create(null);
     for (let i = 0, l = attrs.length; i < l; i++) {
         if (process.env.NODE_ENV !== 'production' && map[attrs[i].name] && !isIE && !isEdge) {
             warn$1('duplicate attribute: ' + attrs[i].name, attrs[i]);
@@ -5210,7 +5231,7 @@ const fnExpRE = /^([\w$_]+|\([^)]*?\))\s*=>|^function(?:\s+[\w$]+)?\s*\(/;
 const fnInvokeRE = /\([^)]*?\);*$/;
 const simplePathRE = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\['[^']*?']|\["[^"]*?"]|\[\d+]|\[[A-Za-z_$][\w$]*])*$/;
 // KeyboardEvent.keyCode aliases
-const keyCodes = {
+const keyCodes = createCompilerObject({
     esc: 27,
     tab: 9,
     enter: 13,
@@ -5220,9 +5241,9 @@ const keyCodes = {
     right: 39,
     down: 40,
     delete: [8, 46]
-};
+});
 // KeyboardEvent.key aliases
-const keyNames = {
+const keyNames = createCompilerObject({
     // #7880: IE11 and Edge use `Esc` for Escape key name.
     esc: ['Esc', 'Escape'],
     tab: 'Tab',
@@ -5236,12 +5257,12 @@ const keyNames = {
     down: ['Down', 'ArrowDown'],
     // #9112: IE11 uses `Del` for Delete key name.
     delete: ['Backspace', 'Delete', 'Del']
-};
+});
 // #4868: modifiers that prevent the execution of the listener
 // need to explicitly return null so that we can determine whether to remove
 // the listener for .once
 const genGuard = condition => `if(${condition})return null;`;
-const modifierCode = {
+const modifierCode = createCompilerObject({
     stop: '$event.stopPropagation();',
     prevent: '$event.preventDefault();',
     self: genGuard(`$event.target !== $event.currentTarget`),
@@ -5252,7 +5273,7 @@ const modifierCode = {
     left: genGuard(`'button' in $event && $event.button !== 0`),
     middle: genGuard(`'button' in $event && $event.button !== 1`),
     right: genGuard(`'button' in $event && $event.button !== 2`)
-};
+});
 function genHandlers(events, isNative) {
     const prefix = isNative ? 'nativeOn:' : 'on:';
     let staticHandlers = ``;
@@ -5379,7 +5400,7 @@ class CodegenState {
         this.warn = options.warn || baseWarn;
         this.transforms = pluckModuleFunction(options.modules, 'transformCode');
         this.dataGenFns = pluckModuleFunction(options.modules, 'genData');
-        this.directives = extend(extend({}, baseDirectives), options.directives);
+        this.directives = copyCompilerProperties(copyCompilerProperties(Object.create(null), baseDirectives), options.directives);
         const isReservedTag = options.isReservedTag || no;
         this.maybeComponent = (el) => !!el.component || !isReservedTag(el.tag);
         this.onceId = 0;
@@ -6055,7 +6076,7 @@ function createFunction(code, errors) {
 function createCompileToFunctionFn(compile) {
     const cache = Object.create(null);
     return function compileToFunctions(template, options, vm) {
-        options = extend({}, options);
+        options = createCompilerObject(options);
         const warn = options.warn || warn$2;
         delete options.warn;
         /* istanbul ignore if */
@@ -6133,13 +6154,14 @@ function createCompileToFunctionFn(compile) {
 function createCompilerCreator(baseCompile) {
     return function createCompiler(baseOptions) {
         function compile(template, options) {
-            const finalOptions = Object.create(baseOptions);
+            const finalOptions = createCompilerObject(baseOptions);
             const errors = [];
             const tips = [];
             let warn = (msg, range, tip) => {
                 (tip ? tips : errors).push(msg);
             };
             if (options) {
+                options = createCompilerObject(options);
                 if (process.env.NODE_ENV !== 'production' && options.outputSourceRange) {
                     // $flow-disable-line
                     const leadingSpaceLength = template.match(/^\s*/)[0].length;
@@ -6162,11 +6184,11 @@ function createCompilerCreator(baseCompile) {
                 }
                 // merge custom directives
                 if (options.directives) {
-                    finalOptions.directives = extend(Object.create(baseOptions.directives || null), options.directives);
+                    finalOptions.directives = copyCompilerProperties(createCompilerObject(baseOptions.directives), options.directives);
                 }
                 // copy other options
                 for (const key in options) {
-                    if (key !== 'modules' && key !== 'directives') {
+                    if (hasOwn(options, key) && key !== 'modules' && key !== 'directives') {
                         finalOptions[key] = options[key];
                     }
                 }
@@ -6398,16 +6420,16 @@ function optimizeSiblings(el) {
     let currentOptimizableGroup = [];
     const pushGroup = () => {
         if (currentOptimizableGroup.length) {
-            optimizedChildren.push({
+            optimizedChildren.push(createCompilerObject({
                 type: 1,
                 parent: el,
                 tag: 'template',
                 attrsList: [],
-                attrsMap: {},
-                rawAttrsMap: {},
+                attrsMap: Object.create(null),
+                rawAttrsMap: Object.create(null),
                 children: currentOptimizableGroup,
                 ssrOptimizability: optimizability.FULL
-            });
+            }));
         }
         currentOptimizableGroup = [];
     };

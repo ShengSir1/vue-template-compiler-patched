@@ -1,0 +1,962 @@
+{
+  "baseline": "Original package at e9cd3cb8ce256280b075b5edabedeba824f29607; normal trusted fixtures only",
+  "templates": [
+    {
+      "name": "plain",
+      "template": "<div>Hello</div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('div',[_v(\"Hello\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',[_ssrNode(\"Hello\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "interpolation",
+      "template": "<div>Hello {{ user.name }}!</div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('div',[_v(\"Hello \"+_s(user.name)+\"!\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',[_ssrNode(_ssrEscape(\"Hello \"+_s(user.name)+\"!\"))])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "metadata",
+      "template": "<div class=\"a b\" style=\"color:red; font-size: 12px\" :class=\"classes\" :style=\"styles\">{{msg}}</div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('div',{staticClass:\"a b\",class:classes,staticStyle:{\"color\":\"red\",\"font-size\":\"12px\"},style:(styles)},[_v(_s(msg))])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',{staticClass:\"a b\",class:classes,staticStyle:{\"color\":\"red\",\"font-size\":\"12px\"},style:(styles)},[_ssrNode(_ssrEscape(_s(msg)))])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "static-tree",
+      "template": "<div><p class=\"x\">a</p><p>b</p></div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _m(0)}",
+          "staticRenderFns": [
+            "with(this){return _c('div',[_c('p',{staticClass:\"x\"},[_v(\"a\")]),_c('p',[_v(\"b\")])])}"
+          ],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',[_ssrNode(\"<p class=\\\"x\\\">a</p><p>b</p>\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "loops",
+      "template": "<ul><li v-for=\"(item, i) in items\" :key=\"i\" ref=\"row\">{{item.name}}</li></ul>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('ul',_l((items),function(item,i){return _c('li',{key:i,ref:\"row\",refInFor:true},[_v(_s(item.name))])}),0)}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('ul',[_ssrNode((_ssrList((items),function(item,i){return (\"<li>\"+_ssrEscape(_s(item.name))+\"</li>\")})))])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "conditions",
+      "template": "<div><span v-if=\"ok\">yes</span><span v-else-if=\"maybe\">maybe</span><span v-else>no</span></div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('div',[(ok)?_c('span',[_v(\"yes\")]):(maybe)?_c('span',[_v(\"maybe\")]):_c('span',[_v(\"no\")])])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',[_ssrNode(((ok)?(\"<span>yes</span>\"):(maybe)?(\"<span>maybe</span>\"):(\"<span>no</span>\")))])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "once",
+      "template": "<div><p v-once>{{msg}}</p></div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('div',[_m(0)])}",
+          "staticRenderFns": [
+            "with(this){return _c('p',[_v(_s(msg))])}"
+          ],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',[_ssrNode(\"<p>\"+_ssrEscape(_s(msg))+\"</p>\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "pre",
+      "template": "<div v-pre>{{literal}}<span :title=\"notBinding\">x</span></div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _m(0)}",
+          "staticRenderFns": [
+            "with(this){return _c('div',{pre:true},[_v(\"{{literal}}\"),_c('span',{pre:true,attrs:{\":title\":\"notBinding\"}},[_v(\"x\")])])}"
+          ],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',{pre:true},[_ssrNode(\"{{literal}}<span :title=\\\"notBinding\\\">x</span>\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "events",
+      "template": "<button @click.stop.prevent=\"save\" @keyup.enter=\"save\">Save</button>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('button',{on:{\"click\":function($event){$event.stopPropagation();$event.preventDefault();return save.apply(null, arguments)},\"keyup\":function($event){if(!$event.type.indexOf('key')&&_k($event.keyCode,\"enter\",13,$event.key,\"Enter\"))return null;return save.apply(null, arguments)}}},[_v(\"Save\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('button',{on:{\"click\":function($event){$event.stopPropagation();$event.preventDefault();return save.apply(null, arguments)},\"keyup\":function($event){if(!$event.type.indexOf('key')&&_k($event.keyCode,\"enter\",13,$event.key,\"Enter\"))return null;return save.apply(null, arguments)}}},[_ssrNode(\"Save\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "dynamic-events",
+      "template": "<button @[event].once=\"save\" v-on=\"listeners\">Save</button>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('button',_g({on:_d({},[_p(event,\"~\"),function($event){return save.apply(null, arguments)}])},listeners),[_v(\"Save\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('button',_g({on:_d({},[_p(event,\"~\"),function($event){return save.apply(null, arguments)}])},listeners),[_ssrNode(\"Save\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "dynamic-attributes",
+      "template": "<div :[name]=\"value\" v-bind=\"attrs\" v-bind.prop=\"props\"></div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('div',_b(_b({},\"div\",_d({},[name,value])),'div',props,true))}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',_b(_b({},\"div\",_d({},[name,value])),'div',props,true),[])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "model-input",
+      "template": "<input v-model.trim=\"value\" :type=\"kind\">",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('input',{directives:[{name:\"model\",rawName:\"v-model.trim\",value:(value),expression:\"value\",modifiers:{\"trim\":true}}],attrs:{\"type\":kind},domProps:{\"value\":(value)},on:{\"input\":function($event){if($event.target.composing)return;value=$event.target.value.trim()},\"blur\":function($event){return $forceUpdate()}}})}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('input',{directives:[{name:\"model\",rawName:\"v-model.trim\",value:(value),expression:\"value\",modifiers:{\"trim\":true}}],attrs:{\"type\":kind},domProps:{\"value\":(value)},on:{\"input\":function($event){if($event.target.composing)return;value=$event.target.value.trim()},\"blur\":function($event){return $forceUpdate()}}},[])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "model-checkbox",
+      "template": "<input type=\"checkbox\" v-model=\"checked\" :value=\"item\">",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('input',{directives:[{name:\"model\",rawName:\"v-model\",value:(checked),expression:\"checked\"}],attrs:{\"type\":\"checkbox\"},domProps:{\"value\":item,\"checked\":Array.isArray(checked)?_i(checked,item)>-1:(checked)},on:{\"change\":function($event){var $$a=checked,$$el=$event.target,$$c=$$el.checked?(true):(false);if(Array.isArray($$a)){var $$v=item,$$i=_i($$a,$$v);if($$el.checked){$$i<0&&(checked=$$a.concat([$$v]))}else{$$i>-1&&(checked=$$a.slice(0,$$i).concat($$a.slice($$i+1)))}}else{checked=$$c}}}})}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('input',{directives:[{name:\"model\",rawName:\"v-model\",value:(checked),expression:\"checked\"}],attrs:{\"type\":\"checkbox\"},domProps:{\"value\":item,\"checked\":Array.isArray(checked)?_i(checked,item)>-1:(checked)},on:{\"change\":function($event){var $$a=checked,$$el=$event.target,$$c=$$el.checked?(true):(false);if(Array.isArray($$a)){var $$v=item,$$i=_i($$a,$$v);if($$el.checked){$$i<0&&(checked=$$a.concat([$$v]))}else{$$i>-1&&(checked=$$a.slice(0,$$i).concat($$a.slice($$i+1)))}}else{checked=$$c}}}},[])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "model-select",
+      "template": "<select v-model=\"value\"><option :value=\"item\">x</option></select>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('select',{directives:[{name:\"model\",rawName:\"v-model\",value:(value),expression:\"value\"}],on:{\"change\":function($event){var $$selectedVal = Array.prototype.filter.call($event.target.options,function(o){return o.selected}).map(function(o){var val = \"_value\" in o ? o._value : o.value;return val}); value=$event.target.multiple ? $$selectedVal : $$selectedVal[0]}}},[_c('option',{domProps:{\"value\":item}},[_v(\"x\")])])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('select',{directives:[{name:\"model\",rawName:\"v-model\",value:(value),expression:\"value\"}],on:{\"change\":function($event){var $$selectedVal = Array.prototype.filter.call($event.target.options,function(o){return o.selected}).map(function(o){var val = \"_value\" in o ? o._value : o.value;return val}); value=$event.target.multiple ? $$selectedVal : $$selectedVal[0]}}},[_c('option',{domProps:{\"value\":item}},[_v(\"x\")])])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "model-textarea",
+      "template": "<textarea v-model=\"value\"></textarea>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('textarea',{directives:[{name:\"model\",rawName:\"v-model\",value:(value),expression:\"value\"}],domProps:{\"value\":(value)},on:{\"input\":function($event){if($event.target.composing)return;value=$event.target.value}}})}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('textarea',{directives:[{name:\"model\",rawName:\"v-model\",value:(value),expression:\"value\"}],domProps:{\"value\":(value)},on:{\"input\":function($event){if($event.target.composing)return;value=$event.target.value}}},[])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "component",
+      "template": "<component :is=\"kind\" v-model=\"value\" @click.native=\"save\"></component>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c(kind,{tag:\"component\",nativeOn:{\"click\":function($event){return save.apply(null, arguments)}},model:{value:(value),callback:function ($$v) {value=$$v},expression:\"value\"}})}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c(kind,{tag:\"component\",nativeOn:{\"click\":function($event){return save.apply(null, arguments)}},model:{value:(value),callback:function ($$v) {value=$$v},expression:\"value\"}})}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "scoped-slots",
+      "template": "<my-box><template v-slot:default=\"slot\"><span>{{slot.msg}}</span></template></my-box>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('my-box',{scopedSlots:_u([{key:\"default\",fn:function(slot){return [_c('span',[_v(_s(slot.msg))])]}}])})}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('my-box',{scopedSlots:_u([{key:\"default\",fn:function(slot){return [_c('span',[_v(_s(slot.msg))])]}}])})}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "legacy-slots",
+      "template": "<my-box><span slot=\"header\">Header</span><template slot-scope=\"p\">{{p.value}}</template></my-box>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('my-box',{scopedSlots:_u([{key:\"default\",fn:function(p){return [_v(_s(p.value))]}}])},[_c('span',{attrs:{\"slot\":\"header\"},slot:\"header\"},[_v(\"Header\")])])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('my-box',{scopedSlots:_u([{key:\"default\",fn:function(p){return [_v(_s(p.value))]}}])},[_c('span',{attrs:{\"slot\":\"header\"},slot:\"header\"},[_v(\"Header\")])])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "slot-outlet",
+      "template": "<div><slot name=\"header\" :user=\"user\">Fallback</slot></div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('div',[_t(\"header\",function(){return [_v(\"Fallback\")]},{\"user\":user})],2)}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',[_t(\"header\",function(){return [_v(\"Fallback\")]},{\"user\":user})],2)}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "inline-template",
+      "template": "<my-box inline-template><div>{{msg}}</div></my-box>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('my-box',{inlineTemplate:{render:function(){with(this){return _c('div',[_v(_s(msg))])}},staticRenderFns:[]}})}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('my-box',{inlineTemplate:{render:function(){with(this){return _c('div',[_v(_s(msg))])}},staticRenderFns:[]}})}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "directives",
+      "template": "<div v-show=\"visible\" v-text=\"message\"></div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('div',{directives:[{name:\"show\",rawName:\"v-show\",value:(visible),expression:\"visible\"}],domProps:{\"textContent\":_s(message)}})}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',{directives:[{name:\"show\",rawName:\"v-show\",value:(visible),expression:\"visible\"}],domProps:{\"textContent\":_s(message)}},[])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "html",
+      "template": "<div v-html=\"content\"></div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('div',{domProps:{\"innerHTML\":_s(content)}})}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',{domProps:{\"innerHTML\":_s(content)}},[])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "comments",
+      "template": "<div><!--note--><p>a</p><span>{{x}}</span></div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('div',[_e(\"note\"),_c('p',[_v(\"a\")]),_c('span',[_v(_s(x))])])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',[_ssrNode(\"<!--note--><p>a</p><span>\"+_ssrEscape(_s(x))+\"</span>\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "entities",
+      "template": "<div title=\"&quot;x&quot;\">&lt; &amp; &#169;</div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('div',{attrs:{\"title\":\"\\\"x\\\"\"}},[_v(\"< & ©\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',{attrs:{\"title\":\"\\\"x\\\"\"}},[_ssrNode(\"&lt; &amp; ©\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "svg",
+      "template": "<svg><g><text>{{label}}</text></g></svg>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('svg',[_c('g',[_c('text',[_v(_s(label))])])])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('svg',[_ssrNode(\"<g><text>\"+_ssrEscape(_s(label))+\"</text></g>\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "textarea-newline",
+      "template": "<div><textarea>\nFirst\nSecond</textarea><p>After</p></div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _m(0)}",
+          "staticRenderFns": [
+            "with(this){return _c('div',[_c('textarea',[_v(\"First\\nSecond\")]),_c('p',[_v(\"After\")])])}"
+          ],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',[_ssrNode(\"<textarea>First\\nSecond</textarea><p>After</p>\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "textarea-upper-close",
+      "template": "<div><textarea>First</TEXTAREA><p>After</p></div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _m(0)}",
+          "staticRenderFns": [
+            "with(this){return _c('div',[_c('textarea',[_v(\"First\")]),_c('p',[_v(\"After\")])])}"
+          ],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',[_ssrNode(\"<textarea>First</textarea><p>After</p>\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "raw-script",
+      "template": "<div><script type=\"text/x-template\">a < b && c > d</script><p>After</p></div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _m(0)}",
+          "staticRenderFns": [
+            "with(this){return _c('div',[_c('script',{attrs:{\"type\":\"text/x-template\"}},[_v(\"a < b && c > d\")]),_c('p',[_v(\"After\")])])}"
+          ],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',[_ssrNode(\"<script type=\\\"text/x-template\\\">a &lt; b &amp;&amp; c &gt; d</script><p>After</p>\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "raw-style",
+      "template": "<div><style>.x { color: red }</style><p>After</p></div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _m(0)}",
+          "staticRenderFns": [
+            "with(this){return _c('div',[_c('p',[_v(\"After\")])])}"
+          ],
+          "errors": [
+            {
+              "msg": "Templates should only be responsible for mapping the state to the UI. Avoid placing tags with side-effects in your templates, such as <style>, as they will not be parsed.",
+              "start": 5
+            }
+          ],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',[_ssrNode(\"<p>After</p>\")])}",
+          "staticRenderFns": [],
+          "errors": [
+            {
+              "msg": "Templates should only be responsible for mapping the state to the UI. Avoid placing tags with side-effects in your templates, such as <style>, as they will not be parsed.",
+              "start": 5
+            }
+          ],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "whitespace",
+      "template": "<div>\n  <p> a   b </p>\n <span>{{x}}</span>\n</div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('div',[_c('p',[_v(\" a   b \")]),_v(\" \"),_c('span',[_v(_s(x))])])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',[_ssrNode(\"<p> a   b </p> <span>\"+_ssrEscape(_s(x))+\"</span>\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "custom-delimiters",
+      "template": "<div>[[value]]</div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true,
+        "delimiters": [
+          "[[",
+          "]]"
+        ]
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('div',[_v(_s(value))])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',[_ssrNode(_ssrEscape(_s(value)))])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "no-optimize",
+      "template": "<div><p>a</p><p>b</p></div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true,
+        "optimize": false
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('div',[_c('p',[_v(\"a\")]),_c('p',[_v(\"b\")])])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',[_ssrNode(\"<p>a</p><p>b</p>\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    },
+    {
+      "name": "scoped-id",
+      "template": "<div><p>{{x}}</p></div>",
+      "options": {
+        "comments": true,
+        "outputSourceRange": true,
+        "scopeId": "data-v-audit"
+      },
+      "expected": {
+        "compile": {
+          "render": "with(this){return _c('div',[_c('p',[_v(_s(x))])])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        },
+        "ssrCompile": {
+          "render": "with(this){return _c('div',[_ssrNode(\"<p data-v-audit>\"+_ssrEscape(_s(x))+\"</p>\")])}",
+          "staticRenderFns": [],
+          "errors": [],
+          "tips": []
+        }
+      }
+    }
+  ],
+  "sfcs": [
+    {
+      "name": "sfc-basic",
+      "source": "<template><div>{{msg}}</div></template>\n<script>export default {}</script>\n<style scoped>.x{color:red}</style>",
+      "options": {
+        "outputSourceRange": true
+      },
+      "expected": {
+        "source": "<template><div>{{msg}}</div></template>\n<script>export default {}</script>\n<style scoped>.x{color:red}</style>",
+        "filename": "anonymous.vue",
+        "template": {
+          "type": "template",
+          "content": "<div>{{msg}}</div>",
+          "start": 10,
+          "end": 28,
+          "attrs": {}
+        },
+        "script": {
+          "type": "script",
+          "content": "export default {}",
+          "start": 48,
+          "end": 65,
+          "attrs": {}
+        },
+        "scriptSetup": null,
+        "styles": [
+          {
+            "type": "style",
+            "content": ".x{color:red}",
+            "start": 89,
+            "end": 102,
+            "attrs": {
+              "scoped": true
+            },
+            "scoped": true
+          }
+        ],
+        "customBlocks": [],
+        "cssVars": [],
+        "errors": [],
+        "shouldForceReload": null
+      }
+    },
+    {
+      "name": "sfc-setup",
+      "source": "<script setup lang=\"ts\">const x = 1</script><template><p>x</p></template><style module src=\"./style.css\"></style>",
+      "options": {
+        "outputSourceRange": true
+      },
+      "expected": {
+        "source": "<script setup lang=\"ts\">const x = 1</script><template><p>x</p></template><style module src=\"./style.css\"></style>",
+        "filename": "anonymous.vue",
+        "template": {
+          "type": "template",
+          "content": "<p>x</p>",
+          "start": 54,
+          "end": 62,
+          "attrs": {}
+        },
+        "script": null,
+        "scriptSetup": {
+          "type": "script",
+          "content": "const x = 1",
+          "start": 24,
+          "end": 35,
+          "attrs": {
+            "setup": true,
+            "lang": "ts"
+          },
+          "lang": "ts",
+          "setup": true
+        },
+        "styles": [
+          {
+            "type": "style",
+            "content": "",
+            "start": 105,
+            "end": 105,
+            "attrs": {
+              "module": true,
+              "src": "./style.css"
+            },
+            "src": "./style.css",
+            "module": true
+          }
+        ],
+        "customBlocks": [],
+        "cssVars": [],
+        "errors": [],
+        "shouldForceReload": null
+      }
+    },
+    {
+      "name": "sfc-custom",
+      "source": "<docs lang=\"md\"># Title</docs><template functional><p>x</p></template>",
+      "options": {
+        "outputSourceRange": true
+      },
+      "expected": {
+        "source": "<docs lang=\"md\"># Title</docs><template functional><p>x</p></template>",
+        "filename": "anonymous.vue",
+        "template": {
+          "type": "template",
+          "content": "<p>x</p>",
+          "start": 51,
+          "end": 59,
+          "attrs": {
+            "functional": true
+          }
+        },
+        "script": null,
+        "scriptSetup": null,
+        "styles": [],
+        "customBlocks": [
+          {
+            "type": "docs",
+            "content": "# Title",
+            "start": 16,
+            "end": 23,
+            "attrs": {
+              "lang": "md"
+            }
+          }
+        ],
+        "cssVars": [],
+        "errors": [],
+        "shouldForceReload": null
+      }
+    },
+    {
+      "name": "sfc-pad",
+      "source": "<template>\n  <p>x</p>\n</template>\n<script>\n  export default {}\n</script>",
+      "options": {
+        "outputSourceRange": true,
+        "pad": "line"
+      },
+      "expected": {
+        "source": "<template>\n  <p>x</p>\n</template>\n<script>\n  export default {}\n</script>",
+        "filename": "anonymous.vue",
+        "template": {
+          "type": "template",
+          "content": "\n<p>x</p>\n",
+          "start": 10,
+          "end": 22,
+          "attrs": {}
+        },
+        "script": {
+          "type": "script",
+          "content": "//\n//\n//\n\n  export default {}\n",
+          "start": 42,
+          "end": 63,
+          "attrs": {}
+        },
+        "scriptSetup": null,
+        "styles": [],
+        "customBlocks": [],
+        "cssVars": [],
+        "errors": [],
+        "shouldForceReload": null
+      }
+    },
+    {
+      "name": "sfc-raw",
+      "source": "<script>const x = \"<tag>\";\nexport default {}</script><style>.x:after{content:\"<\"}</style><template><p>x</p></template>",
+      "options": {
+        "outputSourceRange": true
+      },
+      "expected": {
+        "source": "<script>const x = \"<tag>\";\nexport default {}</script><style>.x:after{content:\"<\"}</style><template><p>x</p></template>",
+        "filename": "anonymous.vue",
+        "template": {
+          "type": "template",
+          "content": "<p>x</p>",
+          "start": 99,
+          "end": 107,
+          "attrs": {}
+        },
+        "script": {
+          "type": "script",
+          "content": "const x = \"<tag>\";\nexport default {}",
+          "start": 8,
+          "end": 44,
+          "attrs": {}
+        },
+        "scriptSetup": null,
+        "styles": [
+          {
+            "type": "style",
+            "content": ".x:after{content:\"<\"}",
+            "start": 60,
+            "end": 81,
+            "attrs": {}
+          }
+        ],
+        "customBlocks": [],
+        "cssVars": [],
+        "errors": [],
+        "shouldForceReload": null
+      }
+    }
+  ]
+}

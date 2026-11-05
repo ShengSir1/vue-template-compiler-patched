@@ -167,6 +167,21 @@
 	function hasOwn(obj, key) {
 	    return hasOwnProperty.call(obj, key);
 	}
+	var compilerEmptyObject = Object.freeze(Object.create(null));
+	// Compiler-owned records never inherit ambient Object.prototype fields.
+	function copyCompilerProperties(target, source) {
+	    if (source) {
+	        Object.keys(source).forEach(function (key) {
+	            Object.defineProperty(target, key, {
+	                value: source[key], enumerable: true, writable: true, configurable: true
+	            });
+	        });
+	    }
+	    return target;
+	}
+	function createCompilerObject(source) {
+	    return copyCompilerProperties(Object.create(null), source);
+	}
 	/**
 	 * Create a cached version of a pure function.
 	 */
@@ -359,7 +374,6 @@
 	var conditionalComment = /^<!\[/;
 	// Special Elements (can contain anything)
 	var isPlainTextElement = makeMap('script,style,textarea', true);
-	var reCache = {};
 	var decodingMap = {
 	    '&lt;': '<',
 	    '&gt;': '>',
@@ -380,7 +394,20 @@
 	    var re = shouldDecodeNewlines ? encodedAttrWithNewLines : encodedAttr;
 	    return value.replace(re, function (match) { return decodingMap[match]; });
 	}
+	// Scan raw-text closing tags once; never backtrack over their contents.
+	function findRawTextEnd(html, tag) {
+	    for (var i = 0; i + tag.length + 2 < html.length; i++) {
+	        if (html.charCodeAt(i) !== 60 || html.charCodeAt(i + 1) !== 47) continue;
+	        var j = 0;
+	        while (j < tag.length && (html.charCodeAt(i + j + 2) | 32) === tag.charCodeAt(j)) j++;
+	        if (j !== tag.length) continue;
+	        var end = html.indexOf('>', i + tag.length + 2);
+	        return end < 0 ? null : { start: i, end: end + 1 };
+	    }
+	    return null;
+	}
 	function parseHTML(html, options) {
+	    options = createCompilerObject(options);
 	    var stack = [];
 	    var expectHTML = options.expectHTML;
 	    var isUnaryTag = options.isUnaryTag || no;
@@ -463,28 +490,20 @@
 	            }
 	        }
 	        else {
-	            var endTagLength_1 = 0;
-	            var stackedTag_1 = lastTag.toLowerCase();
-	            var reStackedTag = reCache[stackedTag_1] ||
-	                (reCache[stackedTag_1] = new RegExp('((?:[^<]+|<(?!/' + stackedTag_1 + '[^>]*>))*)(</' + stackedTag_1 + '[^>]*>)', 'i'));
-	            var rest = html.replace(reStackedTag, function (all, text, endTag) {
-	                endTagLength_1 = endTag.length;
-	                if (!isPlainTextElement(stackedTag_1) && stackedTag_1 !== 'noscript') {
-	                    text = text
-	                        .replace(/<!\--([\s\S]*?)-->/g, '$1') // #7298
-	                        .replace(/<!\[CDATA\[([\s\S]*?)]]>/g, '$1');
-	                }
-	                if (shouldIgnoreFirstNewline(stackedTag_1, text)) {
-	                    text = text.slice(1);
-	                }
-	                if (options.chars) {
-	                    options.chars(text);
-	                }
-	                return '';
-	            });
-	            index += html.length - rest.length;
-	            html = rest;
-	            parseEndTag(stackedTag_1, index - endTagLength_1, index);
+	            var stackedTag = lastTag.toLowerCase();
+	            var rawTextEnd = findRawTextEnd(html, stackedTag);
+	            if (rawTextEnd) {
+	                var text = html.slice(0, rawTextEnd.start);
+	                if (shouldIgnoreFirstNewline(stackedTag, text)) text = text.slice(1);
+	                if (options.chars) options.chars(text);
+	                var endTagStart = index + rawTextEnd.start;
+	                advance(rawTextEnd.end);
+	                parseEndTag(stackedTag, endTagStart, index);
+	            }
+	            else {
+	                // Preserve the existing malformed-input recovery and warning offsets.
+	                parseEndTag(stackedTag, index, index);
+	            }
 	        }
 	        if (html === last) {
 	            options.chars && options.chars(html);
@@ -552,10 +571,10 @@
 	            var shouldDecodeNewlines = tagName === 'a' && args[1] === 'href'
 	                ? options.shouldDecodeNewlinesForHref
 	                : options.shouldDecodeNewlines;
-	            attrs[i] = {
+	            attrs[i] = createCompilerObject({
 	                name: args[1],
 	                value: decodeAttr(value, shouldDecodeNewlines)
-	            };
+	            });
 	            if (options.outputSourceRange) {
 	                attrs[i].start = args.start + args[0].match(/^\s*/).length;
 	                attrs[i].end = args.end;
@@ -636,6 +655,7 @@
 	 */
 	function parseComponent(source, options) {
 	    if (options === void 0) { options = {}; }
+	    options = createCompilerObject(options);
 	    var sfc = {
 	        source: source,
 	        filename: DEFAULT_FILENAME,
@@ -676,7 +696,7 @@
 	                    var name = _a.name, value = _a.value;
 	                    cumulated[name] = value || true;
 	                    return cumulated;
-	                }, {})
+	                }, Object.create(null))
 	            };
 	            if (typeof currentBlock.attrs.src === 'string') {
 	                currentBlock.src = currentBlock.attrs.src;
@@ -3800,7 +3820,7 @@
 	}
 	/* eslint-enable no-unused-vars */
 	function pluckModuleFunction(modules, key) {
-	    return modules ? modules.map(function (m) { return m[key]; }).filter(function (_) { return _; }) : [];
+	    return modules ? modules.map(function (m) { return hasOwn(m, key) ? m[key] : undefined; }).filter(function (_) { return _; }) : [];
 	}
 	function addProp(el, name, value, range, dynamic) {
 	    (el.props || (el.props = [])).push(rangeSetItem({ name: name, value: value, dynamic: dynamic }, range));
@@ -3833,7 +3853,7 @@
 	    return dynamic ? "_p(".concat(name, ",\"").concat(symbol, "\")") : symbol + name; // mark the event as captured
 	}
 	function addHandler(el, name, value, modifiers, important, warn, range, dynamic) {
-	    modifiers = modifiers || emptyObject;
+	    modifiers = modifiers || compilerEmptyObject;
 	    // warn prevent and passive modifier
 	    /* istanbul ignore if */
 	    if (warn && modifiers.prevent && modifiers.passive) {
@@ -3877,13 +3897,13 @@
 	    var events;
 	    if (modifiers.native) {
 	        delete modifiers.native;
-	        events = el.nativeEvents || (el.nativeEvents = {});
+	        events = el.nativeEvents || (el.nativeEvents = Object.create(null));
 	    }
 	    else {
-	        events = el.events || (el.events = {});
+	        events = el.events || (el.events = Object.create(null));
 	    }
 	    var newHandler = rangeSetItem({ value: value.trim(), dynamic: dynamic }, range);
-	    if (modifiers !== emptyObject) {
+	    if (modifiers !== compilerEmptyObject) {
 	        newHandler.modifiers = modifiers;
 	    }
 	    var handlers = events[name];
@@ -3947,6 +3967,7 @@
 	    }
 	}
 	function rangeSetItem(item, range) {
+	    item = createCompilerObject(item);
 	    if (range) {
 	        if (range.start != null) {
 	            item.start = range.start;
@@ -3995,7 +4016,7 @@
 	};
 
 	var parseStyleText = cached(function (cssText) {
-	    var res = {};
+	    var res = Object.create(null);
 	    var listDelimiter = /;(?![^(]*\))/g;
 	    var propertyDelimiter = /:(.+)/;
 	    cssText.split(listDelimiter).forEach(function (item) {
@@ -4540,15 +4561,15 @@
 	var platformGetTagNamespace;
 	var maybeComponent;
 	function createASTElement(tag, attrs, parent) {
-	    return {
+	    return createCompilerObject({
 	        type: 1,
 	        tag: tag,
 	        attrsList: attrs,
 	        attrsMap: makeAttrsMap(attrs),
-	        rawAttrsMap: {},
+	        rawAttrsMap: Object.create(null),
 	        parent: parent,
 	        children: []
-	    };
+	    });
 	}
 	/**
 	 * Convert HTML string to AST.
@@ -4616,7 +4637,7 @@
 	                    // keep it in the children list so that v-else(-if) conditions can
 	                    // find it as the prev node.
 	                    var name_1 = element.slotTarget || '"default"';
-	                    (currentParent.scopedSlots || (currentParent.scopedSlots = {}))[name_1] = element;
+	                    (currentParent.scopedSlots || (currentParent.scopedSlots = Object.create(null)))[name_1] = element;
 	                }
 	                currentParent.children.push(element);
 	                element.parent = currentParent;
@@ -4655,7 +4676,7 @@
 	            warnOnce("Cannot use <".concat(el.tag, "> as component root element because it may ") +
 	                'contain multiple nodes.', { start: el.start });
 	        }
-	        if (el.attrsMap.hasOwnProperty('v-for')) {
+	        if (hasOwn(el.attrsMap, 'v-for')) {
 	            warnOnce('Cannot use v-for on stateful component root element because ' +
 	                'it renders multiple elements.', el.rawAttrsMap['v-for']);
 	        }
@@ -4689,7 +4710,7 @@
 	                    element.rawAttrsMap = element.attrsList.reduce(function (cumulated, attr) {
 	                        cumulated[attr.name] = attr;
 	                        return cumulated;
-	                    }, {});
+	                    }, Object.create(null));
 	                }
 	                attrs.forEach(function (attr) {
 	                    if (invalidAttributeRE.test(attr.name)) {
@@ -4808,20 +4829,20 @@
 	                var res = void 0;
 	                var child = void 0;
 	                if (!inVPre && text !== ' ' && (res = parseText(text, delimiters))) {
-	                    child = {
+	                    child = createCompilerObject({
 	                        type: 2,
 	                        expression: res.expression,
 	                        tokens: res.tokens,
 	                        text: text
-	                    };
+	                    });
 	                }
 	                else if (text !== ' ' ||
 	                    !children.length ||
 	                    children[children.length - 1].text !== ' ') {
-	                    child = {
+	                    child = createCompilerObject({
 	                        type: 3,
 	                        text: text
-	                    };
+	                    });
 	                }
 	                if (child) {
 	                    if (options.outputSourceRange) {
@@ -4836,11 +4857,11 @@
 	            // adding anything as a sibling to the root node is forbidden
 	            // comments should still be allowed, but ignored
 	            if (currentParent) {
-	                var child = {
+	                var child = createCompilerObject({
 	                    type: 3,
 	                    text: text,
 	                    isComment: true
-	                };
+	                });
 	                if (options.outputSourceRange) {
 	                    child.start = start;
 	                    child.end = end;
@@ -4862,10 +4883,10 @@
 	    if (len) {
 	        var attrs = (el.attrs = new Array(len));
 	        for (var i = 0; i < len; i++) {
-	            attrs[i] = {
+	            attrs[i] = createCompilerObject({
 	                name: list[i].name,
 	                value: JSON.stringify(list[i].value)
-	            };
+	            });
 	            if (list[i].start != null) {
 	                attrs[i].start = list[i].start;
 	                attrs[i].end = list[i].end;
@@ -4927,7 +4948,7 @@
 	    if ((exp = getAndRemoveAttr(el, 'v-for'))) {
 	        var res = parseFor(exp);
 	        if (res) {
-	            extend(el, res);
+	            copyCompilerProperties(el, res);
 	        }
 	        else {
 	            warn$1("Invalid v-for expression: ".concat(exp), el.rawAttrsMap['v-for']);
@@ -4938,7 +4959,7 @@
 	    var inMatch = exp.match(forAliasRE);
 	    if (!inMatch)
 	        return;
-	    var res = {};
+	    var res = Object.create(null);
 	    res.for = inMatch[2].trim();
 	    var alias = inMatch[1].trim().replace(stripParensRE, '');
 	    var iteratorMatch = alias.match(forIteratorRE);
@@ -5005,7 +5026,7 @@
 	    if (!el.ifConditions) {
 	        el.ifConditions = [];
 	    }
-	    el.ifConditions.push(condition);
+	    el.ifConditions.push(createCompilerObject(condition));
 	}
 	function processOnce(el) {
 	    var once = getAndRemoveAttr(el, 'v-once');
@@ -5086,7 +5107,7 @@
 	                    }
 	                }
 	                // add the component's children to its default slot
-	                var slots = el.scopedSlots || (el.scopedSlots = {});
+	                var slots = el.scopedSlots || (el.scopedSlots = Object.create(null));
 	                var _b = getSlotName(slotBinding), name_3 = _b.name, dynamic = _b.dynamic;
 	                var slotContainer_1 = (slots[name_3] = createASTElement('template', [], el));
 	                slotContainer_1.slotTarget = name_3;
@@ -5264,7 +5285,7 @@
 	function parseModifiers(name) {
 	    var match = name.match(modifierRE);
 	    if (match) {
-	        var ret_1 = {};
+	        var ret_1 = Object.create(null);
 	        match.forEach(function (m) {
 	            ret_1[m.slice(1)] = true;
 	        });
@@ -5272,7 +5293,7 @@
 	    }
 	}
 	function makeAttrsMap(attrs) {
-	    var map = {};
+	    var map = Object.create(null);
 	    for (var i = 0, l = attrs.length; i < l; i++) {
 	        if (map[attrs[i].name] && !isIE && !isEdge) {
 	            warn$1('duplicate attribute: ' + attrs[i].name, attrs[i]);
@@ -5661,7 +5682,7 @@
 	var fnInvokeRE = /\([^)]*?\);*$/;
 	var simplePathRE = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\['[^']*?']|\["[^"]*?"]|\[\d+]|\[[A-Za-z_$][\w$]*])*$/;
 	// KeyboardEvent.keyCode aliases
-	var keyCodes = {
+	var keyCodes = createCompilerObject({
 	    esc: 27,
 	    tab: 9,
 	    enter: 13,
@@ -5671,9 +5692,9 @@
 	    right: 39,
 	    down: 40,
 	    delete: [8, 46]
-	};
+	});
 	// KeyboardEvent.key aliases
-	var keyNames = {
+	var keyNames = createCompilerObject({
 	    // #7880: IE11 and Edge use `Esc` for Escape key name.
 	    esc: ['Esc', 'Escape'],
 	    tab: 'Tab',
@@ -5687,12 +5708,12 @@
 	    down: ['Down', 'ArrowDown'],
 	    // #9112: IE11 uses `Del` for Delete key name.
 	    delete: ['Backspace', 'Delete', 'Del']
-	};
+	});
 	// #4868: modifiers that prevent the execution of the listener
 	// need to explicitly return null so that we can determine whether to remove
 	// the listener for .once
 	var genGuard = function (condition) { return "if(".concat(condition, ")return null;"); };
-	var modifierCode = {
+	var modifierCode = createCompilerObject({
 	    stop: '$event.stopPropagation();',
 	    prevent: '$event.preventDefault();',
 	    self: genGuard("$event.target !== $event.currentTarget"),
@@ -5703,7 +5724,7 @@
 	    left: genGuard("'button' in $event && $event.button !== 0"),
 	    middle: genGuard("'button' in $event && $event.button !== 1"),
 	    right: genGuard("'button' in $event && $event.button !== 2")
-	};
+	});
 	function genHandlers(events, isNative) {
 	    var prefix = isNative ? 'nativeOn:' : 'on:';
 	    var staticHandlers = "";
@@ -5833,7 +5854,7 @@
 	        this.warn = options.warn || baseWarn;
 	        this.transforms = pluckModuleFunction(options.modules, 'transformCode');
 	        this.dataGenFns = pluckModuleFunction(options.modules, 'genData');
-	        this.directives = extend(extend({}, baseDirectives), options.directives);
+	        this.directives = copyCompilerProperties(copyCompilerProperties(Object.create(null), baseDirectives), options.directives);
 	        var isReservedTag = options.isReservedTag || no;
 	        this.maybeComponent = function (el) {
 	            return !!el.component || !isReservedTag(el.tag);
@@ -6514,7 +6535,7 @@
 	function createCompileToFunctionFn(compile) {
 	    var cache = Object.create(null);
 	    return function compileToFunctions(template, options, vm) {
-	        options = extend({}, options);
+	        options = createCompilerObject(options);
 	        var warn = options.warn || warn$2;
 	        delete options.warn;
 	        /* istanbul ignore if */
@@ -6595,13 +6616,14 @@
 	function createCompilerCreator(baseCompile) {
 	    return function createCompiler(baseOptions) {
 	        function compile(template, options) {
-	            var finalOptions = Object.create(baseOptions);
+	            var finalOptions = createCompilerObject(baseOptions);
 	            var errors = [];
 	            var tips = [];
 	            var warn = function (msg, range, tip) {
 	                (tip ? tips : errors).push(msg);
 	            };
 	            if (options) {
+	                options = createCompilerObject(options);
 	                if (options.outputSourceRange) {
 	                    // $flow-disable-line
 	                    var leadingSpaceLength_1 = template.match(/^\s*/)[0].length;
@@ -6624,11 +6646,11 @@
 	                }
 	                // merge custom directives
 	                if (options.directives) {
-	                    finalOptions.directives = extend(Object.create(baseOptions.directives || null), options.directives);
+	                    finalOptions.directives = copyCompilerProperties(createCompilerObject(baseOptions.directives), options.directives);
 	                }
 	                // copy other options
 	                for (var key in options) {
-	                    if (key !== 'modules' && key !== 'directives') {
+	                    if (hasOwn(options, key) && key !== 'modules' && key !== 'directives') {
 	                        finalOptions[key] = options[key];
 	                    }
 	                }
@@ -6864,16 +6886,16 @@
 	    var currentOptimizableGroup = [];
 	    var pushGroup = function () {
 	        if (currentOptimizableGroup.length) {
-	            optimizedChildren.push({
+	            optimizedChildren.push(createCompilerObject({
 	                type: 1,
 	                parent: el,
 	                tag: 'template',
 	                attrsList: [],
-	                attrsMap: {},
-	                rawAttrsMap: {},
+	                attrsMap: Object.create(null),
+	                rawAttrsMap: Object.create(null),
 	                children: currentOptimizableGroup,
 	                ssrOptimizability: optimizability.FULL
-	            });
+	            }));
 	        }
 	        currentOptimizableGroup = [];
 	    };

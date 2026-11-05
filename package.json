@@ -1,7 +1,7 @@
 {
-  "name": "vue-template-compiler-patched",
-  "version": "2.7.16-patch.3",
-  "description": "Patched Vue 2.7.16 template compiler to fix XSS (CVE-2024-6783) and ReDoS (CVE-2024-9506) security vulnerabilities.",
+  "name": "@ruihua/vue-template-compiler-patched",
+  "version": "2.7.16-patch.4",
+  "description": "Vue 2.7.16 template compiler hardened for CVE-2024-6783 and CVE-2024-9506.",
   "main": "index.js",
   "unpkg": "browser.js",
   "jsdelivr": "browser.js",
@@ -13,7 +13,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bio/vue-template-compiler-patched.git"
+    "url": "git+https://github.com/ShengSir1/vue-template-compiler-patched.git"
   },
   "keywords": [
     "vue",
@@ -22,14 +22,19 @@
   "author": "Evan You",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/bio/vue-template-compiler-patched/issues"
+    "url": "https://github.com/ShengSir1/vue-template-compiler-patched/issues"
   },
-  "homepage": "https://github.com/bio/vue-template-compiler-patched#readme",
+  "homepage": "https://github.com/ShengSir1/vue-template-compiler-patched#readme",
   "dependencies": {
     "de-indent": "^1.0.2",
     "he": "^1.2.0"
   },
-  "devDependencies": {
-    "vue": "file:../.."
+  "scripts": {
+    "test": "node test/security.test.js",
+    "prepublishOnly": "node test/security.test.js"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

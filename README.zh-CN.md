@@ -21,7 +21,7 @@
 
 **兼容性：** AST 节点和编译器字典不再继承 `Object` 方法。自定义编译器工具应使用 `Object.keys(value)` 和 `Object.prototype.hasOwnProperty.call(value, key)`，而不是 `value.hasOwnProperty(key)`。继承得到的编译器选项和指令会被有意忽略；请将它们作为对象自身的属性提供。
 
-**Fork 软件包：** `@ruihua/vue-template-compiler-patched` 保留 Vue 2.7.16 基线，首次发布时沿用现有的 `2.7.16-patch.3` 版本号。上游 MIT 许可证和署名均予以保留。
+**Fork 软件包：** `@ruihua/vue-template-compiler-patched` 保留 Vue 2.7.16 基线，当前版本为 `2.7.16-patch.4`。上游 MIT 许可证和署名均予以保留。
 
 ### 回归测试
 
@@ -44,19 +44,19 @@ npm test
 #### npm
 
 ```sh
-npm install vue-template-compiler@npm:@ruihua/vue-template-compiler-patched@^2.7.16-patch.3 --save-dev
+npm install vue-template-compiler@npm:@ruihua/vue-template-compiler-patched@^2.7.16-patch.4 --save-dev
 ```
 
 #### pnpm
 
 ```sh
-pnpm add vue-template-compiler@npm:@ruihua/vue-template-compiler-patched@^2.7.16-patch.3 --save-dev
+pnpm add vue-template-compiler@npm:@ruihua/vue-template-compiler-patched@^2.7.16-patch.4 --save-dev
 ```
 
 #### Yarn
 
 ```sh
-yarn add vue-template-compiler@npm:@ruihua/vue-template-compiler-patched@^2.7.16-patch.3 --dev
+yarn add vue-template-compiler@npm:@ruihua/vue-template-compiler-patched@^2.7.16-patch.4 --dev
 ```
 
 ### 标准安装方式

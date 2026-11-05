@@ -21,7 +21,7 @@ This package can be used to pre-compile Vue 2.0 templates into render functions 
 
 **Compatibility:** AST nodes and compiler dictionaries no longer inherit Object methods. Custom compiler tooling should use `Object.keys(value)` and `Object.prototype.hasOwnProperty.call(value, key)`, not `value.hasOwnProperty(key)`. Inherited compiler options/directives are intentionally ignored; supply them as own properties.
 
-**Fork package:** `@ruihua/vue-template-compiler-patched` retains the Vue 2.7.16 baseline and the existing `2.7.16-patch.3` version for its initial scoped release. The upstream MIT license and attribution are preserved.
+**Fork package:** `@ruihua/vue-template-compiler-patched` retains the Vue 2.7.16 baseline and is currently version `2.7.16-patch.4`. The upstream MIT license and attribution are preserved.
 
 ### Regression Tests
 
@@ -44,19 +44,19 @@ Installs the patched compiler under the original `vue-template-compiler` name, s
 #### npm
 
 ```sh
-npm install vue-template-compiler@npm:@ruihua/vue-template-compiler-patched@^2.7.16-patch.3 --save-dev
+npm install vue-template-compiler@npm:@ruihua/vue-template-compiler-patched@^2.7.16-patch.4 --save-dev
 ```
 
 #### pnpm
 
 ```sh
-pnpm add vue-template-compiler@npm:@ruihua/vue-template-compiler-patched@^2.7.16-patch.3 --save-dev
+pnpm add vue-template-compiler@npm:@ruihua/vue-template-compiler-patched@^2.7.16-patch.4 --save-dev
 ```
 
 #### Yarn
 
 ```sh
-yarn add vue-template-compiler@npm:@ruihua/vue-template-compiler-patched@^2.7.16-patch.3 --dev
+yarn add vue-template-compiler@npm:@ruihua/vue-template-compiler-patched@^2.7.16-patch.4 --dev
 ```
 
 ### Standard installation method
